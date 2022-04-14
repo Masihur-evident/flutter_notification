@@ -34,7 +34,10 @@ dependencies:
   firebase_auth: ^3.3.11
   cloud_firestore:
   flutter_local_notifications: ^9.4.0
-  awesome_notifications: ^0.0.6+7
+  awesome_notifications: ^0.6.21
+  rxdart: ^0.27.3
+  path_provider: ^2.0.9
+  http: ^0.13.4
 
 
 

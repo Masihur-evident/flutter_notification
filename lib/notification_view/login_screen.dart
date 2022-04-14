@@ -1,9 +1,14 @@
-import 'package:awesome_notifications/awesome_notifications.dart';
+import 'dart:io';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_notification/main.dart';
+import 'package:flutter_notification/notification_view/second_page.dart';
+import 'package:rxdart/rxdart.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -16,19 +21,56 @@ class _LoginScreenState extends State<LoginScreen> {
   TextEditingController emailcontroller = TextEditingController();
   TextEditingController passwordcontroller = TextEditingController();
 
+  static final _notifications = FlutterLocalNotificationsPlugin();
+  static final onNotifications = BehaviorSubject<String?>();
+
+  static Future _notificationDetails() async {
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        'channel id',
+        'channel name',
+        channelDescription: 'channel description',
+        importance: Importance.max,
+        // largeIcon: const DrawableResourceAndroidBitmap('sample_large_icon'),
+        styleInformation: DefaultStyleInformation(true, true),
+      ),
+      iOS: IOSNotificationDetails(),
+    );
+  }
+
+  Future<String> _downloadAndSaveFile(String url, String fileName) async {
+    final Directory directory = await getApplicationDocumentsDirectory();
+    final String filePath = '${directory.path}/$fileName';
+    final http.Response response = await http.get(Uri.parse(url));
+    final File file = File(filePath);
+    await file.writeAsBytes(response.bodyBytes);
+    return filePath;
+  }
+
+  static Future init({bool initScheduled = false}) async {
+    final android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    final iOS = IOSInitializationSettings();
+    final settings = InitializationSettings(android: android, iOS: iOS);
+
+    await _notifications.initialize(settings, onSelectNotification: (payload) {
+      onNotifications.add(payload);
+    });
+  }
+
+  static Future showNotification({
+    int id = 0,
+    String? title,
+    String? body,
+    String? payLoad,
+  }) async =>
+      _notifications.show(id, title, body, await _notificationDetails(),
+          payload: payLoad);
+
   @override
   void initState() {
     // TODO: implement initState
-    AwesomeNotifications().createNotification(
-        content: NotificationContent(
-            //with image from URL
-            id: 12345,
-            channelKey: 'image',
-            title: 'Simple Notification with Network Image',
-            body: 'This simple notification is from Flutter App',
-            bigPicture: 'https://www.fluttercampus.com/img/logo_small.webp',
-            notificationLayout: NotificationLayout.BigPicture,
-            payload: {"name": "flutter"}));
+    init();
+    listenNotifications();
     super.initState();
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -79,6 +121,11 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     });
   }
+
+  void listenNotifications() =>
+      onNotifications.stream.listen(onClickNotification);
+  void onClickNotification(String? payLoad) => Navigator.of(context)
+      .push(MaterialPageRoute(builder: (_) => SecondPage()));
 
   @override
   Widget build(BuildContext context) {

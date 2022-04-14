@@ -19,36 +19,32 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   print("Handling a background message: ${message.messageId}");
+  AwesomeNotifications().createNotificationFromJsonData(message.data);
 }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
-  AwesomeNotifications().initialize('resource://drawable/notification_icon', [
-    // notification icon
-    NotificationChannel(
-      channelKey: 'basic',
-      channelName: 'Basic notifications',
-      channelDescription: 'Notification channel for basic tests',
-      channelShowBadge: true,
-      importance: NotificationImportance.High,
-      enableVibration: true,
-    ),
-
-    NotificationChannel(
-        channelKey: 'image',
-        channelName: 'image notifications',
-        channelDescription: 'Notification channel for image tests',
-        defaultColor: Colors.redAccent,
-        ledColor: Colors.white,
-        channelShowBadge: true,
-        importance: NotificationImportance.High)
-
-    //add more notification type with different configuration
-  ]);
   LocalNotificationService.initialize();
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  AwesomeNotifications().initialize(
+    null,
+    [
+      NotificationChannel(
+          channelGroupKey: 'basic_tests',
+          channelKey: 'basic_channel',
+          channelName: 'Basic notifications',
+          channelDescription: 'Notification channel for basic tests',
+          defaultColor: Color(0xFF9D50DD),
+          ledColor: Colors.white,
+          playSound: true,
+          enableLights: true,
+          enableVibration: true,
+          importance: NotificationImportance.High),
+    ],
+  );
 
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<
