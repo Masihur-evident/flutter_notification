@@ -7,6 +7,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_notification/model/local_push_notification.dart';
 import 'package:flutter_notification/notification_view/login_screen.dart';
 
+import 'notification_view/second_page.dart';
+
 const AndroidNotificationChannel channel = AndroidNotificationChannel(
     "high_performance_channel", "High Importance Notification",
     description: "This Channel is used for important notification",
@@ -22,34 +24,41 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   AwesomeNotifications().createNotificationFromJsonData(message.data);
 }
 
+GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
-  LocalNotificationService.initialize();
+//  LocalNotificationService.initialize();
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   AwesomeNotifications().initialize(
-    null,
-    [
-      NotificationChannel(
-          channelGroupKey: 'basic_tests',
-          channelKey: 'basic_channel',
-          channelName: 'Basic notifications',
-          channelDescription: 'Notification channel for basic tests',
-          defaultColor: Color(0xFF9D50DD),
-          ledColor: Colors.white,
-          playSound: true,
-          enableLights: true,
-          enableVibration: true,
-          importance: NotificationImportance.High),
-    ],
-  );
+      null,
+      [
+        NotificationChannel(
+            channelGroupKey: 'image_tests',
+            channelKey: 'big_picture',
+            channelName: 'Big pictures',
+            channelDescription: 'Notification channel for big pictures',
+            defaultColor: Color(0xFF9D50DD),
+            ledColor: Colors.white,
+            channelShowBadge: true,
+            defaultRingtoneType: DefaultRingtoneType.Ringtone,
+            playSound: true,
+            enableLights: true,
+            enableVibration: true,
+            importance: NotificationImportance.High),
+      ],
+      channelGroups: [
+        NotificationChannelGroup(
+            channelGroupkey: 'image_tests', channelGroupName: 'Images tests'),
+      ],
+      debug: true);
 
-  await flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
-      ?.createNotificationChannel(channel);
+  // await flutterLocalNotificationsPlugin
+  //     .resolvePlatformSpecificImplementation<
+  //         AndroidFlutterLocalNotificationsPlugin>()
+  //     ?.createNotificationChannel(channel);
 
   await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
     alert: true,
@@ -60,26 +69,44 @@ Future<void> main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({Key? key}) : super(key: key);
 
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
   // This widget is the root of your application.
+
+  @override
+  void initState() {
+    AwesomeNotifications()
+        .actionStream
+        .listen((ReceivedNotification receivedNotification) {
+      Navigator.of(context).pushNamed('/NotificationPage', arguments: {
+        // your page params. I recommend you to pass the
+        // entire *receivedNotification* object
+        receivedNotification.id,
+
+        print(' fffffffffffffffffff${receivedNotification.id}'),
+      });
+    });
+    // TODO: implement initState
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Flutter Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
         primarySwatch: Colors.blue,
       ),
+      routes: {
+        SecondPage.id: (context) => const SecondPage(),
+      },
       home: const LoginScreen(),
     );
   }
